@@ -15,7 +15,9 @@ class ProductDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appState = AppScope.of(context);
-    final bool isInCart = appState.cartProducts.any((Product item) => item.id == product.id);
+    final bool isInCart = appState.isInCart(product.id);
+    final bool isFavorite = appState.isFavorite(product.id);
+
     return Scaffold(
       appBar: AppBar(
         leading: context.canPop()
@@ -52,7 +54,39 @@ class ProductDetailsScreen extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: <Widget>[
+              if (isFavorite)
+                Chip(
+                  avatar: Icon(
+                    Icons.favorite,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  label: const Text('In your favorites'),
+                ),
+              if (isInCart)
+                Chip(
+                  avatar: Icon(
+                    Icons.shopping_cart,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  label: const Text('In your cart'),
+                ),
+              if (!isFavorite && !isInCart)
+                Text(
+                  'Not in cart or favorites yet',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.outline,
+                      ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
           Text(
             product.category.toUpperCase(),
             style: Theme.of(context).textTheme.labelLarge,
@@ -73,15 +107,44 @@ class ProductDetailsScreen extends StatelessWidget {
           Text(product.description, style: Theme.of(context).textTheme.bodyLarge),
           const SizedBox(height: 24),
           FilledButton.icon(
-            onPressed: () => appState.toggleCart(product.id),
+            onPressed: () async {
+              await appState.toggleCart(product.id);
+              if (!context.mounted) {
+                return;
+              }
+              final bool nowInCart = appState.isInCart(product.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(nowInCart ? 'Added to cart' : 'Removed from cart'),
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
             icon: Icon(isInCart ? Icons.remove_shopping_cart_outlined : Icons.add_shopping_cart),
             label: Text(isInCart ? 'Remove from cart' : 'Add to cart'),
           ),
           const SizedBox(height: 8),
-          FilledButton.icon(
-            onPressed: () => appState.toggleFavorite(product.id),
-            icon: const Icon(Icons.favorite_outline),
-            label: const Text('Save to favorites'),
+          FilledButton.tonalIcon(
+            onPressed: () async {
+              await appState.toggleFavorite(product.id);
+              if (!context.mounted) {
+                return;
+              }
+              final bool nowFavorite = appState.isFavorite(product.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(nowFavorite ? 'Saved to favorites' : 'Removed from favorites'),
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+            icon: Icon(
+              isFavorite ? Icons.favorite : Icons.favorite_border,
+              color: isFavorite ? Theme.of(context).colorScheme.error : null,
+            ),
+            label: Text(isFavorite ? 'Remove from favorites' : 'Save to favorites'),
           ),
         ],
       ),

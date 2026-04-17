@@ -118,6 +118,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
               final product = products[index];
               return ProductCard(
                 product: product,
+                isFavorite: appState.isFavorite(product.id),
+                isInCart: appState.isInCart(product.id),
                 onTap: () => context.pushNamed(
                   'product-details',
                   pathParameters: <String, String>{'productId': product.id},

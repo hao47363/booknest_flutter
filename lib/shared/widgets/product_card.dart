@@ -7,10 +7,14 @@ class ProductCard extends StatelessWidget {
     super.key,
     required this.product,
     required this.onTap,
+    this.isFavorite = false,
+    this.isInCart = false,
   });
 
   final Product product;
   final VoidCallback onTap;
+  final bool isFavorite;
+  final bool isInCart;
 
   @override
   Widget build(BuildContext context) {
@@ -26,25 +30,73 @@ class ProductCard extends StatelessWidget {
             children: <Widget>[
               Hero(
                 tag: product.id,
-                child: Container(
-                  height: 96,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: colors.secondaryContainer,
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Image.asset(
-                    product.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
-                      return Icon(
-                        Icons.shopping_bag_outlined,
-                        size: 36,
-                        color: colors.onSecondaryContainer,
-                      );
-                    },
-                  ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: <Widget>[
+                    Container(
+                      height: 96,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: colors.secondaryContainer,
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.asset(
+                        product.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
+                          return Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 36,
+                            color: colors.onSecondaryContainer,
+                          );
+                        },
+                      ),
+                    ),
+                    if (isFavorite || isInCart)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            if (isFavorite)
+                              Tooltip(
+                                message: 'In favorites',
+                                child: Material(
+                                  color: colors.errorContainer.withValues(alpha: 0.92),
+                                  shape: const CircleBorder(),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4),
+                                    child: Icon(
+                                      Icons.favorite,
+                                      size: 16,
+                                      color: colors.onErrorContainer,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            if (isFavorite && isInCart) const SizedBox(width: 4),
+                            if (isInCart)
+                              Tooltip(
+                                message: 'In cart',
+                                child: Material(
+                                  color: colors.primaryContainer.withValues(alpha: 0.92),
+                                  shape: const CircleBorder(),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4),
+                                    child: Icon(
+                                      Icons.shopping_cart,
+                                      size: 16,
+                                      color: colors.onPrimaryContainer,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
               ),
               const SizedBox(height: 12),
