@@ -31,6 +31,10 @@ class AppState extends ChangeNotifier {
   bool get isLoggedIn => _isLoggedIn;
   bool get isOnboardingCompleted => _isOnboardingCompleted;
   bool get simulateApiErrors => _simulateApiErrors;
+
+  bool isFavorite(String productId) => _favoriteIds.contains(productId);
+
+  bool isInCart(String productId) => _cartIds.contains(productId);
   List<Product> get products => _products;
   List<MockOrder> get orders => _orders;
   AppUser? get currentUser => _currentUser;

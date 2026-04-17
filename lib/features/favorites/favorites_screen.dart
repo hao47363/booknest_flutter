@@ -28,6 +28,8 @@ class FavoritesScreen extends StatelessWidget {
                 final item = items[index];
                 return ProductCard(
                   product: item,
+                  isFavorite: true,
+                  isInCart: appState.isInCart(item.id),
                   onTap: () => context.pushNamed(
                     'product-details',
                     pathParameters: <String, String>{'productId': item.id},
