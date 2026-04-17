@@ -9,7 +9,7 @@ class AppTheme {
       colorScheme: scheme,
       scaffoldBackgroundColor: const Color(0xFFF8FAFC),
       appBarTheme: const AppBarTheme(centerTitle: false),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
@@ -26,7 +26,7 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: scheme,
       appBarTheme: const AppBarTheme(centerTitle: false),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),

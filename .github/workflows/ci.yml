@@ -1,0 +1,144 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "feature/**"
+      - "feat/**"
+      - "fix/**"
+      - "chore/**"
+      - "docs/**"
+      - "refactor/**"
+      - "test/**"
+      - "perf/**"
+      - "ci/**"
+      - "build/**"
+      - "style/**"
+      - "revert/**"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate:
+    name: Lint, test, naming, commit format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Validate branch name
+        env:
+          BRANCH_NAME: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+        run: ./scripts/validate_branch_name.sh "$BRANCH_NAME"
+
+      - name: Validate commit messages
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            RANGE="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          else
+            RANGE="${{ github.event.before }}..${{ github.sha }}"
+          fi
+
+          COMMITS=$(git rev-list "$RANGE")
+          if [[ -z "$COMMITS" ]]; then
+            echo "No commits to validate in range: $RANGE"
+            exit 0
+          fi
+
+          for commit in $COMMITS; do
+            message=$(git log --format=%s -n 1 "$commit")
+            temp_file="$(mktemp)"
+            printf '%s\n' "$message" > "$temp_file"
+            ./scripts/validate_commit_msg.sh "$temp_file"
+            rm -f "$temp_file"
+          done
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+  build-android-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs:
+      - validate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build debug APK
+        run: flutter build apk --debug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk-${{ github.event.pull_request.number }}
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+
+      - name: Comment PR with APK info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- apk-artifact-comment -->';
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = `${marker}
+            ## Android APK Artifact
+            - APK build completed successfully.
+            - Download from the workflow run artifacts: ${runUrl}
+            - Artifact name: \`android-debug-apk-${context.payload.pull_request.number}\``;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+            }

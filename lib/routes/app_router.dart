@@ -18,14 +18,22 @@ GoRouter createRouter(AppState appState) => GoRouter(
   initialLocation: '/login',
   refreshListenable: appState,
   redirect: (BuildContext context, GoRouterState state) {
-    if (!appState.isOnboardingCompleted && state.matchedLocation != '/onboarding') {
+    final String location = state.matchedLocation;
+
+    // First-run onboarding (must run before auth guard — otherwise /onboarding
+    // is treated as "protected" and bounces with /login forever).
+    if (!appState.isOnboardingCompleted && location != '/onboarding') {
       return '/onboarding';
     }
-    if (appState.isOnboardingCompleted && state.matchedLocation == '/onboarding') {
+    if (appState.isOnboardingCompleted && location == '/onboarding') {
       return appState.isLoggedIn ? '/' : '/login';
     }
-    final bool isAuthRoute = state.matchedLocation == '/login' || state.matchedLocation == '/register';
-    if (!appState.isLoggedIn && !isAuthRoute) {
+
+    final bool isAuthRoute = location == '/login' || location == '/register';
+    final bool isPublicWhenLoggedOut =
+        isAuthRoute || location == '/onboarding';
+
+    if (!appState.isLoggedIn && !isPublicWhenLoggedOut) {
       return '/login';
     }
     if (appState.isLoggedIn && isAuthRoute) {

@@ -182,3 +182,113 @@ assets/images/  # local image assets used by mock data
 
 - This app intentionally uses local mock data and simulated latency.
 - No backend services are required.
+
+---
+
+## Git Hooks and CI Workflow
+
+### Local enforcement with Lefthook
+
+This repository uses `lefthook` for local commit checks:
+
+- `pre-commit`
+  - branch name validation (`scripts/validate_branch_name.sh`)
+  - `flutter analyze`
+  - `flutter test`
+- `commit-msg`
+  - commit message validation (`scripts/validate_commit_msg.sh`)
+
+Install and enable hooks:
+
+```bash
+brew install lefthook
+lefthook install
+```
+
+If commits from Cursor show `flutter: command not found` in the pre-commit hook, the IDE is using a minimal `PATH` (it does not load `~/.zshrc`). Fix it by doing one of:
+
+- Set `FLUTTER_ROOT` to your SDK folder (the one that contains `bin/flutter`), e.g. in `~/.zprofile`: `export FLUTTER_ROOT="$HOME/flutter"`
+- Or add Flutter’s `bin` to `PATH` in `~/.zprofile` (login shells), not only in `~/.zshrc`
+- Or start Cursor from a terminal where `flutter` already works: `cursor .`
+
+Hooks run `flutter` via `scripts/run_flutter.sh`, which checks `FLUTTER_ROOT`, common install paths, FVM, and project `.fvm/flutter_sdk`.
+
+Commit message format:
+
+```text
+<type>(<scope>): <message>
+```
+
+Example:
+
+```text
+feat(cart): implement add to cart option
+```
+
+Allowed commit `type` values:
+
+- `feat`
+- `fix`
+- `chore`
+- `docs`
+- `refactor`
+- `test`
+- `perf`
+- `ci`
+- `build`
+- `style`
+- `revert`
+
+Branch name format:
+
+```text
+<type>/<branch-name>
+```
+
+Examples:
+
+- `feature/cart-add-item`
+- `fix/login-null-check`
+- `chore/update-readme`
+
+These branch names are exempt from the `<type>/<name>` rule: `main`, `develop`, `staging`.
+
+Allowed branch `type` values:
+
+- `feature`
+- `feat`
+- `fix`
+- `chore`
+- `docs`
+- `refactor`
+- `test`
+- `perf`
+- `ci`
+- `build`
+- `style`
+- `revert`
+
+### GitHub Actions
+
+Workflows:
+
+- `.github/workflows/ci.yml`
+  - validates branch naming and commit message format
+  - runs `flutter analyze` and `flutter test`
+  - builds Android debug APK for pull requests
+  - uploads APK artifact and updates PR comment with artifact location
+- `.github/workflows/pr-automation.yml`
+  - auto-creates pull requests for pushed branches that match naming rules
+
+### Required GitHub repository settings
+
+1. **Actions permissions**
+   - Repository Settings -> Actions -> General
+   - Allow GitHub Actions
+   - Set workflow permissions to **Read and write permissions** (needed for PR create/comment updates)
+2. **Branch protection**
+   - Repository Settings -> Branches -> Add rule for `main`
+   - Enable:
+     - Require a pull request before merging
+     - Require status checks to pass before merging
+   - Select CI checks from `.github/workflows/ci.yml`

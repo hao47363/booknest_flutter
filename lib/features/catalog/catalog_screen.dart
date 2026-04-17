@@ -89,7 +89,8 @@ class _CatalogScreenState extends State<CatalogScreen> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _sortKey,
+            key: ValueKey<String>(_sortKey),
+            initialValue: _sortKey,
             decoration: const InputDecoration(labelText: 'Sort by'),
             items: const <DropdownMenuItem<String>>[
               DropdownMenuItem<String>(value: 'name', child: Text('Name (A-Z)')),
