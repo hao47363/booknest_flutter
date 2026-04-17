@@ -189,6 +189,8 @@ assets/images/  # local image assets used by mock data
 
 ### Local enforcement with Lefthook
 
+Full rules and examples: [docs/naming-conventions.md](docs/naming-conventions.md).
+
 This repository uses `lefthook` for local commit checks:
 
 - `pre-commit`
