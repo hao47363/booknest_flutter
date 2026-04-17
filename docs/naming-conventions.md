@@ -86,6 +86,7 @@ These names are **not** checked against the pattern:
 
 - `main`
 - `develop`
+- `dev`
 - `staging`
 
 ### Examples — valid
@@ -116,7 +117,7 @@ cart-feature                               # missing type prefix
 |-------|-----------|
 | Lefthook `commit-msg` | `./scripts/validate_commit_msg.sh` |
 | Lefthook `pre-commit` / `pre-push` | `./scripts/validate_branch_name.sh` (and analyze/test on commit) |
-| `.github/workflows/ci.yml` | Same validators + `flutter analyze` / `flutter test` |
+| `.github/workflows/ci.yml` | Branch + commit validators (skipped on push to `main` / `develop` / `staging` / `dev`), `flutter analyze` / `flutter test`; APK only on **pull_request** |
 
 After changing hooks or scripts, run **`lefthook install`** from the repo root.
 

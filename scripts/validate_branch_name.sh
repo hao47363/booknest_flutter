@@ -17,7 +17,7 @@ fi
 
 # Long-lived integration branches — no type/<name> prefix required.
 case "$branch_name" in
-  main|develop|staging)
+  main|develop|staging|dev)
     exit 0
     ;;
 esac

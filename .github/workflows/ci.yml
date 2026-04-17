@@ -1,3 +1,5 @@
+# APK job runs only for pull_request (not branch pushes). Pushes to feature/* still
+# skip APK until you open a PR — that is expected.
 name: CI
 
 on:
@@ -44,11 +46,13 @@ jobs:
         run: flutter pub get
 
       - name: Validate branch name
+        if: ${{ github.event_name != 'push' || (github.ref_name != 'main' && github.ref_name != 'develop' && github.ref_name != 'staging' && github.ref_name != 'dev') }}
         env:
           BRANCH_NAME: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
         run: ./scripts/validate_branch_name.sh "$BRANCH_NAME"
 
       - name: Validate commit messages
+        if: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref_name != 'main' && github.ref_name != 'develop' && github.ref_name != 'staging' && github.ref_name != 'dev') }}
         shell: bash
         run: |
           set -euo pipefail
@@ -82,6 +86,7 @@ jobs:
   build-android-apk:
     name: Build Android APK
     runs-on: ubuntu-latest
+    # Artifacts + PR body update only make sense for PRs; push workflows never run this job.
     if: github.event_name == 'pull_request'
     needs:
       - validate
@@ -108,37 +113,75 @@ jobs:
           path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
 
-      - name: Comment PR with APK info
+      - name: Update PR description and comment with APK info
         uses: actions/github-script@v7
         with:
           script: |
-            const marker = '<!-- apk-artifact-comment -->';
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const body = `${marker}
-            ## Android APK Artifact
-            - APK build completed successfully.
-            - Download from the workflow run artifacts: ${runUrl}
-            - Artifact name: \`android-debug-apk-${context.payload.pull_request.number}\``;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pullNumber = context.payload.pull_request.number;
+            const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`;
+            const artifactName = `android-debug-apk-${pullNumber}`;
+
+            const commentMarker = '<!-- apk-artifact-comment -->';
+            const commentBody = `${commentMarker}
+            ## Android APK (debug)
+            - Build succeeded. Download the APK from **this workflow run’s artifacts**: ${runUrl}
+            - Artifact name: \`${artifactName}\``;
 
             const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
+              owner,
+              repo,
+              issue_number: pullNumber,
             });
-
-            const existing = comments.find((c) => c.body && c.body.includes(marker));
-            if (existing) {
+            const existingComment = comments.find((c) => c.body && c.body.includes(commentMarker));
+            if (existingComment) {
               await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body: commentBody,
               });
             } else {
               await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-                body,
+                owner,
+                repo,
+                issue_number: pullNumber,
+                body: commentBody,
               });
             }
+
+            // PR body (description): inject / replace a machine-managed block (not the same as a review comment).
+            const blockStart = '<!-- BOOKNEST_APK_BLOCK_START -->';
+            const blockEnd = '<!-- BOOKNEST_APK_BLOCK_END -->';
+            const descriptionBlock = `${blockStart}
+            ### Android debug APK
+            - [Open this workflow run and download **Artifacts** ↓](${runUrl})
+            - Artifact: \`${artifactName}\`
+            ${blockEnd}`;
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: pullNumber,
+            });
+            let prBody = pr.body ?? '';
+            const i0 = prBody.indexOf(blockStart);
+            const i1 = prBody.indexOf(blockEnd);
+            if (i0 !== -1 && i1 !== -1 && i1 > i0) {
+              prBody =
+                prBody.slice(0, i0) +
+                descriptionBlock.trim() +
+                prBody.slice(i1 + blockEnd.length);
+            } else {
+              prBody =
+                prBody.trim().length > 0
+                  ? `${prBody.trimEnd()}\n\n${descriptionBlock.trim()}`
+                  : descriptionBlock.trim();
+            }
+            await github.rest.pulls.update({
+              owner,
+              repo,
+              pull_number: pullNumber,
+              body: prBody,
+            });

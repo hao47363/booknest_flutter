@@ -27,7 +27,54 @@ A local-first Flutter bookstore demo app that mimics a real mobile/web app flow 
 
 ---
 
-## Quick Start (Fresh Clone)
+## New developer — one-shot setup
+
+Use this after you have **Flutter installed** and working in a terminal (`flutter --version` succeeds). You do **not** need to know Dart or Git hooks first; the script installs packages, checks the project, runs tests, and optionally installs Git hooks.
+
+### 1) Clone the repository
+
+```bash
+git clone <your-repo-url>
+cd booknest_flutter
+```
+
+(Use your real folder name if it differs.)
+
+### 2) Run the setup script (pick your OS)
+
+**macOS, Linux, or Windows (Git Bash)**
+
+```bash
+bash scripts/setup.sh
+```
+
+**Windows (PowerShell)**
+
+```powershell
+cd booknest_flutter
+powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1
+```
+
+The script will:
+
+1. Run **`flutter pub get`** — download Dart/Flutter dependencies  
+2. Run **`flutter analyze`** — ensure the project passes static analysis  
+3. Run **`flutter test`** — run the test suite  
+4. Run **`lefthook install`** — only if [Lefthook](https://github.com/evilmartians/lefthook) is installed (hooks are optional for *running* the app; they help before `git commit`)
+
+If any step fails, read the error in the terminal, fix the issue (often Flutter or Xcode/Android setup), then run the script again.
+
+### 3) Run the app
+
+```bash
+flutter run -d chrome
+```
+
+If `flutter` is not recognized, install Flutter and add it to `PATH` (see **Environment Setup** below).
+
+---
+
+## Quick Start (manual, without the script)
 
 ```bash
 git clone <your-repo-url>
@@ -35,8 +82,6 @@ cd <repo-folder>
 flutter pub get
 flutter run -d chrome
 ```
-
-If `flutter` is not recognized, follow the OS-specific setup below.
 
 ---
 
@@ -112,10 +157,9 @@ flutter doctor -v
 
 ## Run the App
 
-From project root:
+From project root (after **`bash scripts/setup.sh`** or at least **`flutter pub get`**):
 
 ```bash
-flutter pub get
 flutter run -d chrome
 ```
 
@@ -133,6 +177,7 @@ flutter run -d android    # if Android SDK/device is available
 ## Development Commands
 
 ```bash
+bash scripts/setup.sh   # full setup / verify project (pub get, analyze, test, hooks)
 flutter analyze
 flutter test
 ```
@@ -157,6 +202,7 @@ lib/
     profile/
   routes/
   shared/
+scripts/        # setup.sh, validators, run_flutter helper for hooks
 assets/images/  # local image assets used by mock data
 ```
 
@@ -164,6 +210,8 @@ assets/images/  # local image assets used by mock data
 
 ## Troubleshooting
 
+- **`bash scripts/setup.sh` fails on `flutter analyze` or `flutter test`**
+  - Run `flutter doctor -v` and fix anything marked as missing (web target needs Chrome for `flutter run -d chrome`).
 - `flutter: command not found`
   - Ensure Flutter is installed and `flutter/bin` is in `PATH`
   - Restart terminal/IDE after updating `PATH`
@@ -200,7 +248,7 @@ This repository uses `lefthook` for local commit checks:
 - `commit-msg`
   - commit message validation (`scripts/validate_commit_msg.sh`)
 
-Install and enable hooks:
+Install and enable hooks (or run **`bash scripts/setup.sh`** once Lefthook is installed):
 
 ```bash
 brew install lefthook
@@ -253,7 +301,7 @@ Examples:
 - `fix/login-null-check`
 - `chore/update-readme`
 
-These branch names are exempt from the `<type>/<name>` rule: `main`, `develop`, `staging`.
+These branch names are exempt from the `<type>/<name>` rule: `main`, `develop`, `dev`, `staging`.
 
 Allowed branch `type` values:
 
@@ -275,10 +323,10 @@ Allowed branch `type` values:
 Workflows:
 
 - `.github/workflows/ci.yml`
-  - validates branch naming and commit message format
-  - runs `flutter analyze` and `flutter test`
-  - builds Android debug APK for pull requests
-  - uploads APK artifact and updates PR comment with artifact location
+  - validates branch naming and commit message format (skipped on **push** to `main`, `develop`, `dev`, `staging` — merge commits and long-lived branches only run analyze/test)
+  - runs `flutter analyze` and `flutter test` on every run
+  - builds Android debug APK **only when the workflow runs for a pull request** (not on branch-only pushes)
+  - uploads the APK as a workflow **artifact** and updates the PR **description** (plus a PR comment) with a link to download it from the run’s **Artifacts** section
 - `.github/workflows/pr-automation.yml`
   - auto-creates pull requests for pushed branches that match naming rules
 
