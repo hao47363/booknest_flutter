@@ -23,6 +23,11 @@ jobs:
       tooling_repository: hao47363/better-dev-ci
       tooling_ref: stable
       tooling_auth_mode: none
+      trigger_event_name: ${{ github.event_name }}
+      pr_base_sha: ${{ github.event.pull_request.base.sha || '' }}
+      pr_head_sha: ${{ github.event.pull_request.head.sha || '' }}
+      pr_head_ref: ${{ github.head_ref || '' }}
+      pr_title: ${{ github.event.pull_request.title || '' }}
       runtime: flutter
       # runtime_version: "3.29.0"
     secrets: inherit
