@@ -1,0 +1,23 @@
+type:docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "docs/**"
+
+area:ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**"
+
+area:test:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*test*"
+          - "test/**"
+          - "tests/**"
+
+area:dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "pubspec.yaml"
+          - "pubspec.lock"

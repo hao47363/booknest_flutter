@@ -1,0 +1,28 @@
+# Copy to: .github/workflows/ci.yml
+# Flutter: installs the Flutter SDK via universal-ci runtime; commands use flutter pub get / analyze / test presets.
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  universal-ci:
+    uses: hao47363/better-dev-ci/.github/workflows/universal-ci.yml@stable
+    with:
+      tooling_repository: hao47363/better-dev-ci
+      tooling_ref: stable
+      tooling_auth_mode: none
+      runtime: flutter
+      # runtime_version: "3.29.0"
+    secrets: inherit

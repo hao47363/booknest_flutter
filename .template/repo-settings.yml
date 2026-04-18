@@ -1,0 +1,42 @@
+# Copy to: .template/repo-settings.yml
+# Empty commands.* → Flutter stack defaults (pub get, analyze, test). Enable build for apk/ipa when you want it in CI.
+
+project:
+  stack: flutter
+
+commands:
+  install: ""
+  lint: ""
+  test: ""
+  build: ""
+
+ci:
+  run_lint: true
+  run_test: true
+  run_build: false
+
+# This quickstart includes thin callers for PR automation, stale,
+# labeler, and PR intelligence under `.github/workflows/`. Keys below default
+# to on (`true`); set a flag to `false` to disable that automation.
+
+governance:
+  exempt_branches: "main,develop,staging,dev"
+  branch_types: "feature,feat,fix,chore,docs,refactor,test,perf,ci,build,style,revert"
+  conventional_types: "feat,fix,chore,docs,refactor,test,perf,ci,build,style,revert"
+
+automation:
+  labeler_enabled: true
+  auto_pr_enabled: true
+  auto_pr_base_branch: "main"
+  stale_enabled: true
+  stale_days_before_stale: 30
+  stale_days_before_close: 14
+  stale_exempt_issue_labels: "pinned,security,never-stale"
+  stale_exempt_pr_labels: "pinned,security,never-stale"
+
+pr_intelligence:
+  enabled: true
+  strict_mode: false
+  hotspot_history_commits: 200
+  hotspot_threshold: 6
+  ignore_patterns: ""
